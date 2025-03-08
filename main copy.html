@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Model Viewer</title>
+  
+  <link rel="stylesheet" href="style.css">
+
+  <style>  
+      /* Basic reset and styling */
+      body, html {
+          margin: 0;
+          padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      color: #fff;
+    }
+    /* Menu bar styling */
+    #menu {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      text-align: center;
+    }
+    #menu select,
+    #menu button {
+        font-size: 16px;
+        padding: 5px 10px;
+        margin: 0 5px;
+    }
+    
+    
+    /* Container for Three.js renderer */
+    #container {
+        position: absolute;
+        top: 0px;
+        width: 100%;
+        height: 100%;
+    }
+    </style>
+  
+</head>
+<body>
+    <!-- Menu Bar -->
+    <div id="menu">
+        <label for="modelSelect">Select Model: </label>
+        <select id="modelSelect">
+            <!-- <option value="cube">Cube</option>
+            <option value="sphere">Sphere</option>
+            <option value="torus">Torus</option> -->
+            <option value="heart">Heart</option>
+            <option value="flower">Flower Bouqet</option>
+        </select>
+        <button id="spinButton">Toggle Spin</button>
+    </div>
+
+    <!-- Container for 3D canvas -->
+    <div id="container"></div>
+    <div class="js-container container"></div>
+    
+    <!-- three.js, OrbitControls, and GLTFLoader from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls, currentMesh;
+        let isSpinning = false;
+        const gltfLoader = new THREE.GLTFLoader();
+        
+        // Advanced lighting setup function
+        function setupLighting() {
+        // Remove default lights if any exist
+        // Ambient light provides a base level of light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambientLight);
+        
+        // Hemisphere light simulates the effect of sky and ground lighting
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
+        hemiLight.position.set(0, 50, 0);
+        scene.add(hemiLight);
+        
+        // Directional light simulates sunlight. Enable shadows for a more realistic effect.
+        const dirLight = new THREE.DirectionalLight(0xffffff, 10);
+        dirLight.position.set(1, 1, 200);
+        dirLight.castShadow = true;
+        // Adjust shadow properties for quality
+        dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      dirLight.shadow.camera.near = 0.5;
+      dirLight.shadow.camera.far = 50;
+      scene.add(dirLight);
+    }
+    
+    // Initialize the scene, camera, renderer, and controls
+    function init() {
+      // Create the scene
+      scene = new THREE.Scene();
+      // Set the background color to white so tat a white 3D model stands out
+      scene.background = null;
+      // To set the background to an image, uncomment the line below and replace 'path_to_image.jpg' with your image URL:
+      // scene.background = new THREE.TextureLoader().load('path_to_image.jpg');
+
+      // Set up camera with perspective projection
+      camera = new THREE.PerspectiveCamera(
+        50,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 2, 5);
+      
+      // Set up the renderer and set its clear color to white
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0xffffff,0);
+      renderer.shadowMap.enabled = true;
+      document.getElementById("container").appendChild(renderer.domElement);
+      
+      // Set up advanced/professional lighting
+      setupLighting();
+
+      // Enable OrbitControls for mouse and touch interactions
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.25;
+      
+      // Handle window resize
+      window.addEventListener("resize", onWindowResize, false);
+      
+      // Load the default model (cube)
+      loadModel(document.getElementById("modelSelect").value);
+      
+      // Listen for model changes from the menu
+      document.getElementById("modelSelect").addEventListener("change", (event) => {
+          loadModel(event.target.value);
+      });
+      
+      // Spin button toggles horizontal rotation
+      document.getElementById("spinButton").addEventListener("click", () => {
+          isSpinning = !isSpinning;
+        });
+    }
+
+    // Dispose of a mesh (geometry and material) properly before removal
+    function disposeMesh(mesh) {
+      mesh.traverse(child => {
+          if(child.geometry) child.geometry.dispose();
+          if(child.material) {
+          if(Array.isArray(child.material)) {
+              child.material.forEach(material => material.dispose());
+            } else {
+            child.material.dispose();
+        }
+        }
+    });
+}
+
+// Load the selected model into the scene
+    function loadModel(modelType) {
+        // Remove the current mesh if it exists and dispose of its resources
+        if (currentMesh) {
+            scene.remove(currentMesh);
+            disposeMesh(currentMesh);
+            currentMesh = null;
+        }
+        
+        if (modelType === "heart") {
+            // Load the heart.glb model using GLTFLoader
+            gltfLoader.load(
+                'crystal_heart.glb',
+          function(gltf) {
+              currentMesh = gltf.scene;
+              // Optionally adjust scale or position if needed
+              currentMesh.scale.set(1, 1, 1);
+              scene.add(currentMesh);
+          },
+          undefined,
+          function(error) {
+            console.error('An error occurred while loading the model:', error);
+          }
+        );
+    } else if (modelType === "flower") {
+        gltfLoader.load(
+            'flower_bouquet.glb',
+            function(gltf) {
+                currentMesh = gltf.scene;
+                currentMesh.scale.set(1, 1, 1);
+                scene.add(currentMesh);
+            },
+            undefined,
+            function(error) {
+                console.error('Error loading model:', error);
+            }
+        );
+    //   } else {
+    //     let geometry;
+    //     // Choose geometry based on the selection
+    //     switch (modelType) {
+        //       case "cube":
+        //         geometry = new THREE.BoxGeometry();
+        //         break;
+        //       case "sphere":
+        //         geometry = new THREE.SphereGeometry(0.75, 32, 32);
+        //         break;
+        //       case "torus":
+        //         geometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
+        //         break;
+    //       default:
+    //         geometry = new THREE.BoxGeometry();
+    //     }
+    // Use a standard material with a random color for variety
+        const material = new THREE.MeshStandardMaterial({
+          color: Math.random() * 0xffffff,
+        });
+        currentMesh = new THREE.Mesh(geometry, material);
+        // Allow the model to cast and receive shadows
+        currentMesh.castShadow = true;
+        currentMesh.receiveShadow = true;
+        scene.add(currentMesh);
+    }
+}
+    
+// Update renderer and camera on window resize
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update(); // update controls for damping
+        
+        // If the spin button is activated, rotate the current mesh slowly around the Y axis
+        if (isSpinning && currentMesh) {
+            currentMesh.rotation.y += 0.01;
+        }
+      
+      renderer.render(scene, camera);
+    }
+    
+    // Initialize and start animation
+    init();
+    animate();
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>

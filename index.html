@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Model Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="style.css">
+
+  <style>  
+    /* Basic reset and styling */
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif;
+        color: #fff;
+
+    }
+
+    /* Menu bar styling */
+    #menu {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      background: rgba(20, 20, 20, 0.9);
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #menu select,
+    #menu button {
+      font-size: 16px;
+      padding: 8px 12px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #modelSelect {
+      background: #222;
+      color: #fff;
+    }
+
+    #spinButton {
+      background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+      color: white;
+      transition: 0.3s;
+    }
+
+    #spinButton:hover {
+      background: linear-gradient(135deg, #ff4d4d, #ff6b3b);
+    }
+
+    /* Speed Slider Container */
+    .slider-container {
+      display: flex;
+      align-items: center;
+      margin-left: 15px;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    /* Slider Input */
+    #speedSlider {
+      width: 120px;
+      margin: 0 10px;
+      appearance: none;
+      height: 6px;
+      background: linear-gradient(to right, #ff6b6b, #ff8e53);
+      border-radius: 3px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    #speedSlider::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    /* Speed Ticks */
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      width: 120px;
+      margin-top: 5px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+/* 
+    Container for Three.js renderer */
+    #container {
+        position: absolute;
+        top: 0px;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+    }
+
+    button#ClickMe {
+        position: absolute;
+        top: 700%;
+        left: 5%;
+
+        padding-bottom: 5px;
+        background: linear-gradient(135deg, #ff6b6b, #ff0000);
+      color: rgb(234, 200, 200);
+      text-decoration:underline dotted 0.5px;
+      transition: 0.3s;
+        z-index: 6999;
+    }
+
+    button#ClickMe:hover {
+        background: linear-gradient(135deg,#b60404,#d86e6e);
+    }
+
+    .custom-alert-popup {
+    border-radius: 20px;
+    box-shadow: 0px 4px 10px rgba(255, 20, 147, 0.3);
+}
+
+.custom-alert-title {
+    font-family: "Cursive", sans-serif;
+    font-size: 22px;
+}
+
+.custom-alert-button {
+    font-size: 18px;
+    border-radius: 15px !important;
+    padding: 10px 20px !important;
+}
+/* 📱 Responsive styles for Samsung Galaxy A15 (720 x 1600 px) */
+@media only screen and (max-width: 720px) {
+    
+    /* Adjust Menu Bar */
+    #menu {
+        flex-direction: column;
+        top: 5px;
+        width: 90%;
+        left: 2.5%;
+        transform: none;
+        padding: 10px;
+    }
+
+    #menu select,
+    #menu button {
+        text-align: center;
+        width: 100%;
+        margin: 5px 0;
+        font-size: 14px;
+    }
+
+    /* Resize Speed Slider */
+    .slider-container {
+        flex-direction: column;
+        text-align: center;
+        width: 100%;
+        margin-right: 5%;
+        margin-top: 5px;
+    }
+    
+    #speedSlider {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    /* Adjust "Click Me" Button */
+    button#ClickMe {
+        top: 400%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 15px;
+        font-size: 16px;
+    }
+
+    /* Fix Three.js Container */
+    #container {
+        width: 100%;
+        height: calc(100vh - 60px);
+    }
+
+    /* Fix Confetti Position */
+    .confetti-container {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Resize Custom Alert */
+    .custom-alert-popup {
+        width: 90%;
+    }
+
+    .custom-alert-title {
+        font-size: 18px;
+    }
+
+    .custom-alert-button {
+        font-size: 16px;
+        padding: 8px 15px;
+    }
+}
+
+  </style>
+  
+</head>
+<body>
+    
+    <!-- Menu Bar -->
+    <div id="menu">
+        <label for="modelSelect">Select Gift: </label>
+        <select id="modelSelect">
+            <option value="heart">Heart</option>
+            <option value="flower">Flower Bouquet</option>
+        </select>      
+
+        <button id="ClickMe">Click :3</button>
+        
+        <button id="spinButton">Rotate Me</button>
+        <div class="slider-container">
+            <label for="speedSlider">Speed:</label>
+            <input type="range" id="speedSlider" min="0" max="2" step="0.2" value="1">
+      </div>
+        
+        <!-- Speed Slider -->
+    </div>
+    
+    <!-- Slider Ticks -->
+   
+    <!-- <div class="confetti-container"></div>  -->
+
+    <div id="container"></div>
+    <div class="js-container container"></div>
+
+    
+    <!-- Three.js, OrbitControls, and GLTFLoader from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <script>
+      // Global variables
+      let scene, camera, renderer, controls, currentMesh;
+      let isSpinning = false;
+      let spinSpeed = 1;
+      const gltfLoader = new THREE.GLTFLoader();
+
+      
+      function setupLighting() {
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+          scene.add(ambientLight);
+
+          const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
+          hemiLight.position.set(0, 50, 0);
+          scene.add(hemiLight);
+
+          const dirLight = new THREE.DirectionalLight(0xffffff, 10);
+          dirLight.position.set(1, 1, 200);
+          dirLight.castShadow = true;
+          
+          scene.add(dirLight);
+      }
+
+      function init() {
+          scene = new THREE.Scene();
+          scene.background = null;
+
+          camera = new THREE.PerspectiveCamera(
+              50, window.innerWidth / window.innerHeight, 0.1, 1000
+          );
+          camera.position.set(0, 2, 5);
+
+          renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.setClearColor(0xffffff, 0); // Fully transparent
+          renderer.shadowMap.enabled = true;
+          document.getElementById("container").appendChild(renderer.domElement);
+
+          setupLighting();
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.25;
+
+          window.addEventListener("resize", onWindowResize, false);
+          loadModel(document.getElementById("modelSelect").value);
+
+          document.getElementById("modelSelect").addEventListener("change", (event) => {
+              loadModel(event.target.value);
+          });
+
+          document.getElementById("spinButton").addEventListener("click", () => {
+              isSpinning = !isSpinning;
+          });
+
+          document.getElementById("ClickMe").addEventListener("click", () => {
+            function showWomenDayMessage() {
+    Swal.fire({
+        title: "💖 Happy Women's Day! 💖",
+        text: "My darling, you are the most beautiful and precious flower in my life.\n\n🌸💘Wishing you to stay as fantastic and creative genius as u are💕",
+        icon: "heart",
+        background: "#FFC0CB", // Soft pink background
+        color: "#D63384", // Dark pink text
+        confirmButtonText: "💝 Thank you, love! 💝",
+        confirmButtonColor: "#FF69B4", // Bright pink button
+        padding: "1.5rem",
+        customClass: {
+            popup: "custom-alert-popup",
+            title: "custom-alert-title",
+            confirmButton: "custom-alert-button",
+        }
+
+    });
+}
+showWomenDayMessage();
+
+
+          });
+    
+          document.getElementById("speedSlider").addEventListener("input", (event) => {
+              spinSpeed = parseFloat(event.target.value);
+          });
+      }
+
+      function disposeMesh(mesh) {
+          mesh.traverse(child => {
+              if (child.geometry) child.geometry.dispose();
+              if (child.material) {
+                  if (Array.isArray(child.material)) {
+                      child.material.forEach(material => material.dispose());
+                  } else {
+                      child.material.dispose();
+                  }
+              }
+          });
+      }
+
+      function loadModel(modelType) {
+          if (currentMesh) {
+              scene.remove(currentMesh);
+              disposeMesh(currentMesh);
+              currentMesh = null;
+          }
+
+          const modelPaths = {
+              heart: 'crystal_heart.glb',
+              flower: 'flower_bouquet.glb'
+          };
+
+          gltfLoader.load(modelPaths[modelType], function(gltf) {
+              currentMesh = gltf.scene;
+              currentMesh.scale.set(1, 1, 1);
+              scene.add(currentMesh);
+          }, undefined, function(error) {
+              console.error('Error loading model:', error);
+          });
+      }
+
+      function onWindowResize() {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+          requestAnimationFrame(animate);
+          controls.update();
+
+          if (isSpinning && currentMesh) {
+              currentMesh.rotation.y += 0.01 * spinSpeed;
+          }
+
+          
+          renderer.render(scene, camera);
+      }
+
+      init();
+      animate();
+  </script>
+  
+  <script src="script.js"></script>
+</body>
+</html>
