@@ -28,5 +28,5 @@ You might also want to change the Notification message, and write something more
 > If you have some suggestions or found errors, feel free to send me a pull request and describe in words what you have found
 
 
-##### Have fun, and happy womens day ;)
+##### Have fun, and happy womens' day ;)
 
