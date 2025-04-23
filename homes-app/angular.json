@@ -12,7 +12,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/",
+            "outputPath": "dist/Sachar04.github.io",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": [
